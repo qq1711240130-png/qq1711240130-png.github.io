@@ -43,6 +43,10 @@ let hasEnteredContent = false;
 let activeModule = null;
 let routeScrollingUntil = 0;
 let lastNavigationScroll = 0;
+let folderProgress = null;
+let folderTarget = 0;
+let folderFrame = 0;
+let folderFrameTime = 0;
 const navigation = document.querySelector('.site-navigation');
 const anchor = document.querySelector('.navigation-anchor');
 const section = document.querySelector('.experience-section');
@@ -327,48 +331,90 @@ function setCategorySelection(slug) {
  activeCategory=slug;
  categoryLinks.forEach(link=>link.setAttribute('aria-current',String(link.dataset.categoryLink===slug)));
 }
-function paintFolderMorph() {
+const clampUnit=value=>Math.max(0,Math.min(1,value));
+const softStep=value=>{const t=clampUnit(value);return t*t*t*(t*(t*6-15)+10);};
+const morphWindow=(value,start,end)=>softStep((value-start)/(end-start));
+function renderFolderMorph(progress) {
  const mobile=innerWidth<=760;
  const viewWidth=document.documentElement.clientWidth||innerWidth;
  const top=(mobile?12:16)+navHeight+6;
  const available=innerHeight-top;
  const overviewTop=portfolioOverview.getBoundingClientRect().top;
- const distance=Math.max(220,available*.72);
- const raw=Math.max(0,Math.min(1,(top-overviewTop)/distance));
- const p=reduceMotion.matches?(raw>=.5?1:0):raw*raw*(3-2*raw);
- const blend=Math.max(0,Math.min(1,(p-.56)/.4));
  categoryStrip.style.setProperty('--stage-top',`${Math.max(top,overviewTop)}px`);
  categoryStrip.style.visibility=overviewTop<innerHeight?'visible':'hidden';
- categoryStrip.style.setProperty('--bar-opacity',String(Math.max(0,(p-.65)/.35)));
- categoryStrip.style.setProperty('--label-opacity',String(blend));
- categoryStrip.style.setProperty('--mini-opacity',String(blend));
- categoryStrip.style.setProperty('--art-opacity',String(1-blend));
- categoryStrip.classList.toggle('is-compact',p>.98);
- categoryStrip.dataset.morph=p.toFixed(3);
+ categoryStrip.style.setProperty('--bar-opacity',String(morphWindow(progress,.62,.96)));
+ categoryStrip.classList.toggle('is-compact',progress>.995);
+ categoryStrip.classList.toggle('is-morphing',progress>.008&&progress<.995);
+ categoryStrip.dataset.morph=progress.toFixed(3);
  const gridWidth=mobile?Math.min(215,viewWidth*.43):Math.min(350,viewWidth*.23);
  const gridHeight=gridWidth*900/700;
  const endWidth=mobile?Math.min(118,(viewWidth-32)/3):Math.min(152,(viewWidth-70)/6);
- const endHeight=mobile?36:42, gap=mobile?6:10, columns=mobile?3:6;
+ const endHeight=mobile?36:42,gap=mobile?6:10,columns=mobile?3:6;
  const rowWidth=columns*endWidth+(columns-1)*gap;
- const lerp=(a,b)=>a+(b-a)*p;
+ const delays=[0,.025,.05,.08,.105,.13];
+ const bezier=(a,b,c,d,t)=>{const u=1-t;return u*u*u*a+3*u*u*t*b+3*u*t*t*c+t*t*t*d;};
  categoryLinks.forEach((card,i)=>{
-  const position=Number(card.dataset.gridPosition);
-  const col=mobile?position%2:position%3;
-  const row=mobile?Math.floor(position/2):Math.floor(position/3);
-  const centerX=viewWidth*(mobile?[.27,.73][col]:[.22,.5,.78][col]);
-  const centerY=available*(mobile?[.20,.49,.78][row]:[.26,.70][row]);
+  const local=reduceMotion.matches?progress:clampUnit((progress-delays[i])/.87);
+  const q=softStep(local),lerp=(a,b)=>a+(b-a)*q;
+  // Match the expanded reading order to the final controls to avoid crossing paths.
+  const col=mobile?i%2:i%3,row=mobile?Math.floor(i/2):Math.floor(i/3);
+  const centerX=viewWidth*(mobile?[.27,.73][col]:[.23,.50,.77][col]);
+  const centerY=available*(mobile?[.20,.49,.78][row]+[0,-.008,.008,0,-.006,.006][i]:[.27,.235,.285,.71,.745,.705][i]);
   const x0=centerX-gridWidth*.5,y0=centerY-gridHeight*.66;
   const x1=(viewWidth-rowWidth)/2+(i%columns)*(endWidth+gap);
   const y1=8+Math.floor(i/columns)*(endHeight+gap);
-  card.style.setProperty('--card-x',`${lerp(x0,x1)}px`);
-  card.style.setProperty('--card-y',`${lerp(y0,y1)}px`);
+  const cardX=lerp(x0,x1),cardY=lerp(y0,y1);
+  const iconX=x1+(mobile?16.5:22.5),iconY=y1+endHeight*.5+2;
+  const bend=(mobile?12:22)*[1,-1,1,1,-1,-1][i];
+  const visualX=bezier(centerX,centerX+(iconX-centerX)*.16+bend,iconX-bend*.35,iconX,q);
+  const visualY=bezier(centerY,centerY-available*.16,iconY+Math.min(90,available*.12),iconY,q);
+  // Keep the source texture at a constant size and scale it on the compositor.
+  const endArtWidth=(mobile?21:27)*700/580;
+  const scale=Math.pow(endArtWidth/gridWidth,q);
+  const artX=visualX-cardX-gridWidth*.5*scale;
+  const artY=visualY-cardY-gridHeight*.66*scale;
+  const handoff=morphWindow(local,.85,1);
+  card.style.setProperty('--card-x',`${cardX}px`);
+  card.style.setProperty('--card-y',`${cardY}px`);
   card.style.setProperty('--card-width',`${lerp(gridWidth,endWidth)}px`);
   card.style.setProperty('--card-height',`${lerp(gridHeight,endHeight)}px`);
-  card.style.setProperty('--art-width',`${lerp(gridWidth,34)}px`);
-  card.style.setProperty('--art-x',`${lerp(0,7)}px`);
-  card.style.setProperty('--art-y',`${lerp(0,-10)}px`);
+  card.style.setProperty('--expanded-width',`${gridWidth}px`);
+  card.style.setProperty('--art-x',`${artX}px`);
+  card.style.setProperty('--art-y',`${artY}px`);
+  card.style.setProperty('--art-scale',String(scale));
+  card.style.setProperty('--morph-tilt',`${Math.sin(Math.PI*q)*[2,-2,1.5,-2,1.8,-1.5][i]}deg`);
+  card.style.setProperty('--art-opacity',String(1-handoff));
+  card.style.setProperty('--mini-opacity',String(handoff));
+  card.style.setProperty('--label-opacity',String(morphWindow(local,.69,1)));
+  card.style.setProperty('--label-lift',`${(1-morphWindow(local,.69,1))*5}px`);
+  card.style.setProperty('--bar-opacity',String(morphWindow(local,.76,1)));
+  card.style.setProperty('--float-strength',String(1-q));
  });
 }
+function advanceFolderMorph(now) {
+ folderFrame=0;
+ if(activePage!=='portfolio'||portfolio.hidden){folderFrameTime=0;return;}
+ const dt=folderFrameTime?Math.min(.05,(now-folderFrameTime)/1000):1/60;
+ folderFrameTime=now;
+ // A short, time-based catch-up softens wheel steps without overshoot or trailing drift.
+ folderProgress+=(folderTarget-folderProgress)*(1-Math.exp(-dt/.065));
+ if(Math.abs(folderTarget-folderProgress)<.0002)folderProgress=folderTarget;
+ renderFolderMorph(folderProgress);
+ if(folderProgress!==folderTarget)folderFrame=requestAnimationFrame(advanceFolderMorph);
+ else folderFrameTime=0;
+}
+function paintFolderMorph() {
+ const top=(innerWidth<=760?12:16)+navHeight+6;
+ const distance=Math.max(240,(innerHeight-top)*.84);
+ const raw=clampUnit((top-portfolioOverview.getBoundingClientRect().top)/distance);
+ folderTarget=reduceMotion.matches?(raw>=.5?1:0):raw;
+ if(folderProgress===null||reduceMotion.matches){
+  folderProgress=folderTarget;cancelAnimationFrame(folderFrame);folderFrame=0;folderFrameTime=0;
+ }
+ renderFolderMorph(folderProgress);
+ if(folderProgress!==folderTarget&&!folderFrame)folderFrame=requestAnimationFrame(advanceFolderMorph);
+}
+
 function updateWorkScrollSpy() {
  if(activePage!=='portfolio' || portfolio.hidden) return;
  paintFolderMorph();

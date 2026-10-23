@@ -267,3 +267,15 @@ body[data-navigation-docked=true]:before{opacity:1}
  .ecommerce-menu a:nth-child(3) .module-label-art{width:69px;height:23px;object-fit:fill}
 }
 
+/* Retain source texture sizes while the compositor moves and scales each folder. */
+.folder-stage .folder-card{left:0;top:0;transform:translate3d(var(--card-x,0px),var(--card-y,0px),0);will-change:transform;transition:background-color .2s}
+.folder-stage .folder-art{left:0;top:0;width:var(--expanded-width,300px);transform:translate3d(var(--art-x,0px),var(--art-y,0px),0) rotate(var(--morph-tilt,0deg)) scale(var(--art-scale,1));transform-origin:0 0;will-change:transform,opacity}
+.folder-stage .folder-label{transform:translate3d(0,var(--label-lift,0px),0);will-change:transform,opacity}
+.folder-stage .chip-art{will-change:opacity}
+.folder-stage .folder-float,.folder-stage.is-compact .folder-float{animation-name:folder-breathe-soft;animation-play-state:running}
+@keyframes folder-breathe-soft{0%,100%{transform:translate3d(0,calc(2px * var(--float-strength,1)),0) rotate(calc(-.25deg * var(--float-strength,1)))}50%{transform:translate3d(0,calc(-9px * var(--float-strength,1)),0) rotate(calc(.25deg * var(--float-strength,1)))}}
+.folder-stage.is-morphing .folder-open{transform:none!important;transition-duration:.25s}
+.folder-stage.is-morphing .folder-paper{opacity:0!important;transform:translateY(20%) rotate(var(--paper-turn,0deg))!important;transition:opacity .18s,transform .25s}
+.folder-stage.is-morphing .folder-sticker{opacity:0!important;transform:translateY(30%) scale(.8)!important;transition:opacity .15s,transform .25s;transition-delay:0s!important}
+@media(prefers-reduced-motion:reduce){.folder-stage .folder-float{animation:none}}
+
