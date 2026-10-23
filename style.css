@@ -138,3 +138,9 @@
 #category-title:focus{outline:none}
 
 @media(min-width:1001px){.folder-grid{transform:translateY(-25%)}}
+
+/* The original inserts stay visible when closed; the tall sheet appears only as it rises. */
+.folder-paper{opacity:0;transition:transform .72s cubic-bezier(.22,1,.36,1),opacity .2s .36s}
+.folder-card:is(:focus-visible,.is-opening) .folder-paper{opacity:1;transition-delay:0s}
+@media(hover:hover){.folder-card:hover .folder-paper{opacity:1;transition-delay:0s}}
+@media(prefers-reduced-motion:reduce){.folder-paper{transition:none}}
