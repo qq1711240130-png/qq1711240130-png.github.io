@@ -177,6 +177,7 @@ body[data-navigation-docked=true]:before{opacity:1}
 .work-category-heading h2{margin:0;color:#171717;font-size:clamp(27px,3vw,42px);font-weight:400;line-height:1.4;letter-spacing:.025em}
 .work-pending{width:min(1340px,84%);margin:0 auto;min-height:140px;display:flex;align-items:center;color:#a0a0a7;font-size:15px;letter-spacing:.08em}
 .work-category:not(:last-child){border-bottom:1px solid #f0f0f3}
+.work-category:last-child{min-height:calc(100svh - var(--work-scroll-offset) + 24px)}
 
 .ecommerce-layout{width:min(1720px,94%);margin:0 auto;display:grid;grid-template-columns:clamp(72px,8.6vw,165px) minmax(0,1fr);gap:clamp(24px,7.1vw,137px);align-items:start}
 .ecommerce-menu{position:sticky;top:var(--work-scroll-offset);display:flex;flex-direction:column;align-items:center;gap:44px;padding:20px 26px 40px 0;border-right:1px solid #c9c7d1;min-height:440px}
