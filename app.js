@@ -18,6 +18,22 @@ video.addEventListener('error', () => notify('视频加载失败，请刷新页�
 startVideo.addEventListener('click', playVideo); playVideo();
 
 const resume = document.querySelector('#resume');
+const portfolio = document.querySelector('#portfolio');
+const portfolioInner = document.querySelector('.portfolio-inner');
+const portfolioOverview = document.querySelector('.portfolio-overview');
+const categoryView = document.querySelector('.category-view');
+const categoryTitle = document.querySelector('#category-title');
+const folderCards = [...document.querySelectorAll('.folder-card')];
+const categories = {
+ aigc:{name:'AIGC',color:'#92979b'},
+ ecommerce:{name:'电商视觉',color:'#389ee9'},
+ brand:{name:'品牌设计',color:'#5546ed'},
+ offline:{name:'线下物料',color:'#ec6e78'},
+ marketing:{name:'品牌营销',color:'#ff9b2c'}
+};
+let activePage = 'resume';
+let activeCategory = null;
+let categoryOpenTimer;
 const navigation = document.querySelector('.site-navigation');
 const anchor = document.querySelector('.navigation-anchor');
 const section = document.querySelector('.experience-section');
@@ -177,7 +193,8 @@ function paintNavigation() {
  navigation.style.setProperty('--nav-left',`${smallDock?(innerWidth-width)/2:anchorLeft}px`);
  navigation.style.setProperty('--nav-width',`${width}px`);
  navigation.style.setProperty('--nav-height',`${compact?Math.max(52,anchorHeight):anchorHeight}px`);
- if(performance.now()>=manualSelectionUntil) selectTab(resume.getBoundingClientRect().top<innerHeight*.66?'resume':'none');
+ const surface=activePage==='portfolio'?portfolio:resume;
+ if(performance.now()>=manualSelectionUntil) selectTab(surface.getBoundingClientRect().top<innerHeight*.66?activePage:'none');
 }
 window.addEventListener('scroll', () => {
  if(navigationFrame) return;
@@ -186,11 +203,10 @@ window.addEventListener('scroll', () => {
 window.addEventListener('resize',measureNavigation,{passive:true});
 new ResizeObserver(measureNavigation).observe(anchor);
 navigation.querySelector('[data-action="简历"]').addEventListener('click', () => {
- manualSelectionUntil=performance.now()+1300; selectTab('resume');
- resume.scrollIntoView({behavior:reduceMotion.matches?'auto':'smooth',block:'start'});
+ navigateContent('#resume');
 });
 navigation.querySelector('[data-action="过往作品"]').addEventListener('click', () => {
- manualSelectionUntil=performance.now()+2800; selectTab('portfolio'); notify('过往作品内容待补充');
+ navigateContent('#portfolio');
 });
 measureNavigation();
 
@@ -213,7 +229,7 @@ if('IntersectionObserver' in window && !reduceMotion.matches) {
 } else reveals.forEach(element=>element.classList.add('revealed'));
 
 // A restrained bottom-edge pull, independent of the career wheel gesture.
-const bounceSurface = document.querySelector('.resume-inner');
+let bounceSurface = document.querySelector('.resume-inner');
 let bouncePosition = 0;
 let bounceVelocity = 0;
 let bounceTarget = 0;
@@ -276,3 +292,58 @@ window.addEventListener('scroll', () => {
 window.addEventListener('resize', resetPageBounce, {passive:true});
 window.addEventListener('pointerdown', resetPageBounce, {passive:true});
 window.addEventListener('pagehide', resetPageBounce, {passive:true});
+
+// Only the content below the existing cover changes. Hash routes can be shared,
+// opened in a new tab, and traversed with the browser's Back/Forward buttons.
+function applyContentRoute(hash, {scroll=false,focus=false}={}) {
+ clearTimeout(categoryOpenTimer);
+ folderCards.forEach(card=>card.classList.remove('is-opening'));
+ const requested=hash.startsWith('#portfolio/')?hash.slice('#portfolio/'.length):null;
+ const category=requested && Object.hasOwn(categories,requested)?categories[requested]:null;
+ const nextPage=hash==='#portfolio'||hash.startsWith('#portfolio/')?'portfolio':'resume';
+ const changed=activePage!==nextPage||activeCategory!==(category?requested:null);
+ resetPageBounce();
+ activePage=nextPage;
+ activeCategory=category?requested:null;
+ resume.hidden=nextPage!=='resume';
+ portfolio.hidden=nextPage!=='portfolio';
+ portfolioOverview.hidden=Boolean(category);
+ categoryView.hidden=!category;
+ categoryTitle.textContent=category?category.name:'';
+ portfolio.setAttribute('aria-labelledby',category?'category-title':'portfolio-title');
+ portfolioInner.style.setProperty('--category-color',category?category.color:'#5776ff');
+ document.body.dataset.page=nextPage;
+ bounceSurface=nextPage==='portfolio'?portfolioInner:document.querySelector('.resume-inner');
+ const surface=nextPage==='portfolio'?portfolio:resume;
+ const inner=nextPage==='portfolio'?portfolioInner:bounceSurface;
+ if(changed&&!reduceMotion.matches) inner.animate([{opacity:.25,transform:'translateY(12px)'},{opacity:1,transform:'translateY(0)'}],{duration:600,easing:'cubic-bezier(.22,1,.36,1)'});
+ manualSelectionUntil=performance.now()+1300;
+ selectTab(nextPage);
+ if(scroll) surface.scrollIntoView({behavior:reduceMotion.matches?'auto':'smooth',block:'start'});
+ if(focus&&category) categoryTitle.focus({preventScroll:true});
+ paintNavigation();
+}
+function navigateContent(hash,options={}) {
+ if(window.location.hash!==hash) window.history.pushState(null,'',hash);
+ applyContentRoute(hash,{scroll:true,...options});
+}
+folderCards.forEach(card=>card.addEventListener('click',event=>{
+ if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey) return;
+ event.preventDefault();
+ clearTimeout(categoryOpenTimer);
+ folderCards.forEach(other=>other.classList.remove('is-opening'));
+ card.classList.add('is-opening');
+ const delay=reduceMotion.matches||event.detail===0?0:matchMedia('(hover: none)').matches?380:120;
+ categoryOpenTimer=setTimeout(()=>navigateContent(card.getAttribute('href'),{focus:true}),delay);
+}));
+document.querySelector('[data-portfolio-back]').addEventListener('click',event=>{
+ if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey) return;
+ event.preventDefault();
+ const previous=activeCategory;
+ navigateContent('#portfolio');
+ const card=folderCards.find(item=>item.dataset.category===previous);
+ if(card) card.focus({preventScroll:true});
+});
+window.addEventListener('popstate',()=>applyContentRoute(window.location.hash,{scroll:true}));
+window.addEventListener('hashchange',()=>applyContentRoute(window.location.hash,{scroll:true}));
+if(/^#(?:resume|portfolio)(?:\/|$)/.test(window.location.hash)) applyContentRoute(window.location.hash,{scroll:true});
