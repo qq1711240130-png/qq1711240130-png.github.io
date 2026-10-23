@@ -364,7 +364,7 @@ function renderFolderMorph(progress) {
   const x1=(viewWidth-rowWidth)/2+(i%columns)*(endWidth+gap);
   const y1=8+Math.floor(i/columns)*(endHeight+gap);
   const cardX=lerp(x0,x1),cardY=lerp(y0,y1);
-  const iconX=x1+(mobile?16.5:22.5),iconY=y1+endHeight*.5+2;
+  const iconX=x1+endWidth*.5-(mobile?26.5:33.5),iconY=y1+endHeight*.5+2;
   const bend=(mobile?12:22)*[1,-1,1,1,-1,-1][i];
   const visualX=bezier(centerX,centerX+(iconX-centerX)*.16+bend,iconX-bend*.35,iconX,q);
   const visualY=bezier(centerY,centerY-available*.16,iconY+Math.min(90,available*.12),iconY,q);
