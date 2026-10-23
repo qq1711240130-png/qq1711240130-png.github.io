@@ -10,3 +10,58 @@
 @media(max-width:760px){.timeline-rule{height:54px}.node-caption{font-size:10px;padding:3px 6px;letter-spacing:0}.node-order{font-size:8px;margin-right:3px}.experience-timeline{margin-bottom:14px}}
 /* The selected resume pill already separates the tabs. */
 .site-navigation[data-active=resume]:after{opacity:0}
+
+/* Portrait layouts keep the artwork readable instead of shrinking a desktop canvas. */
+.scroll-hint-mobile{display:none}
+@media(max-width:760px){
+ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+ .first-screen{display:block;min-height:100svh}
+ .hero{width:100%;height:100svh;min-height:600px;max-height:1100px;aspect-ratio:auto}
+ .scene{inset:120px 0 96px;overflow:hidden}
+ .scene video{object-fit:cover;object-position:50% 50%}
+ .heading-art{left:7%;top:calc(48px + env(safe-area-inset-top,0px));width:clamp(158px,46vw,220px);height:auto}
+ .english-art{left:auto;right:7%;top:calc(66px + env(safe-area-inset-top,0px));width:clamp(74px,22vw,105px);height:auto}
+ .navigation-anchor{left:6%;width:88%;top:auto;bottom:calc(38px + env(safe-area-inset-bottom,0px));height:56px}
+ .site-navigation{top:max(var(--nav-top,12px),env(safe-area-inset-top,0px))}
+ .site-navigation .nav-word{height:28px}
+ .resume-spacer{height:clamp(64px,12svh,112px)}
+ .resume{padding:38px 0 calc(48px + env(safe-area-inset-bottom,0px));scroll-margin-top:96px;min-height:0}
+ .resume-inner{width:86%;max-width:560px;min-width:0}
+ .resume-header-copy h2{font-size:36px}
+ .resume-meta>div{font-size:15px;gap:16px}
+ .resume-meta dd{min-width:0}
+ .resume-meta a{display:inline-block;padding:3px 0}
+ .scroll-hint-desktop{display:none}
+ .scroll-hint-mobile{display:block;font-size:12px;line-height:1.7}
+ .period-range{font-size:clamp(25px,7vw,32px)}
+ .timeline-node:first-of-type{left:14%}
+ .timeline-node:last-of-type{left:86%}
+ .node-caption{font-size:11px}
+ .experience-panels{display:block;touch-action:pan-y;overflow:hidden}
+ .experience-panel{display:none}
+ .experience-panel.is-active{display:block;animation:mobile-career-enter .55s cubic-bezier(.22,1,.36,1) both}
+ .company-copy{display:block;padding-left:22px}
+ .company-copy h3{font-size:19px;line-height:1.6;overflow-wrap:anywhere}
+ .company-copy>p{font-size:15px;line-height:1.6;margin-top:5px;color:#65656d}
+ .detail-copy{padding-left:22px;font-size:15px;line-height:1.9;overflow-wrap:anywhere}
+ .experience-dots{gap:4px}
+ .experience-dots button{width:44px;height:44px}
+ .map-stage{width:min(86%,320px);height:220px;margin:4px auto 0}
+ .playback{opacity:1;right:7%;bottom:calc(110px + env(safe-area-inset-bottom,0px));width:44px;height:44px;font-size:16px;background:#fffffff0}
+ .video-start{top:auto;bottom:calc(110px + env(safe-area-inset-bottom,0px));min-height:44px;white-space:nowrap}
+ .feedback{bottom:calc(24px + env(safe-area-inset-bottom,0px));max-width:86vw;white-space:normal;text-align:center;line-height:1.6}
+}
+@keyframes mobile-career-enter{from{opacity:0;transform:translate3d(14px,0,0)}to{opacity:1;transform:none}}
+@media(max-width:960px) and (orientation:landscape) and (max-height:500px){
+ .hero{width:100%;height:max(100svh,400px);min-height:400px;max-height:none;aspect-ratio:auto}
+ .scene{inset:0}
+ .scene video{object-fit:contain}
+ .heading-art{left:5%;top:35%;width:clamp(122px,20vw,175px);height:auto}
+ .english-art{left:auto;right:5%;top:37%;width:clamp(70px,11vw,90px);height:auto}
+ .navigation-anchor{left:16%;width:68%;height:44px;top:auto;bottom:16px}
+ .site-navigation .nav-word{height:25px}
+ .playback{right:5%;bottom:18px;opacity:1;width:44px;height:44px}
+ .resume-spacer{height:64px}
+}
+@media(pointer:coarse) and (min-width:761px){.navigation-anchor{height:max(44px,5%)}.playback{opacity:1;width:44px;height:44px}}
+@media(prefers-reduced-motion:reduce){.experience-panel.is-active{animation:none}}

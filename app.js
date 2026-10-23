@@ -136,13 +136,22 @@ section.addEventListener('keydown', event => {
  const targets = {ArrowDown:activeJob+1,ArrowRight:activeJob+1,ArrowUp:activeJob-1,ArrowLeft:activeJob-1,Home:0,End:panels.length-1};
  if(event.key in targets) { event.preventDefault(); goToJob(targets[event.key]); }
 });
+// Horizontal swipes change a career card; vertical gestures keep scrolling the page.
+const touchSurface = document.querySelector('.experience-panels');
 let touch = null;
-section.addEventListener('touchstart', event => { const t=event.changedTouches[0]; touch={x:t.clientX,y:t.clientY}; }, {passive:true});
-section.addEventListener('touchend', event => {
- if(!touch) return; const t=event.changedTouches[0]; const dy=touch.y-t.clientY, dx=touch.x-t.clientX;
- if(Math.abs(dy)>44 && Math.abs(dy)>Math.abs(dx)) goToJob(activeJob + Math.sign(dy));
- touch=null;
+touchSurface.addEventListener('touchstart', event => {
+ if(event.touches.length !== 1) { touch=null; return; }
+ const t=event.touches[0]; touch={id:t.identifier,x:t.clientX,y:t.clientY};
 }, {passive:true});
+touchSurface.addEventListener('touchend', event => {
+ if(!touch) return;
+ const t=[...event.changedTouches].find(point=>point.identifier===touch.id);
+ if(!t) return;
+ const dy=touch.y-t.clientY, dx=touch.x-t.clientX;
+ touch=null;
+ if(Math.abs(dx)>48 && Math.abs(dx)>Math.abs(dy)*1.4) goToJob(activeJob + Math.sign(dx));
+}, {passive:true});
+touchSurface.addEventListener('touchcancel', () => { touch=null; }, {passive:true});
 
 // Keep the same bar attached to its hero position, then pin it at the top.
 let anchorTop=0, anchorLeft=0, anchorWidth=0, anchorHeight=0;
@@ -158,14 +167,16 @@ function selectTab(tab) {
  navigation.querySelector('[data-action="过往作品"]').setAttribute('aria-pressed',String(tab==='portfolio'));
 }
 function paintNavigation() {
- const docked=anchorTop-scrollY<=16;
+ const compact=innerWidth<=760;
+ const dockTop=compact?12:16;
+ const docked=anchorTop-scrollY<=dockTop;
  navigation.classList.toggle('is-docked',docked);
  const smallDock=innerWidth<=760 && docked;
  const width=smallDock?Math.min(innerWidth*.86,520):anchorWidth;
- navigation.style.setProperty('--nav-top',`${Math.max(16,anchorTop-scrollY)}px`);
+ navigation.style.setProperty('--nav-top',`${Math.max(dockTop,anchorTop-scrollY)}px`);
  navigation.style.setProperty('--nav-left',`${smallDock?(innerWidth-width)/2:anchorLeft}px`);
  navigation.style.setProperty('--nav-width',`${width}px`);
- navigation.style.setProperty('--nav-height',`${smallDock?44:anchorHeight}px`);
+ navigation.style.setProperty('--nav-height',`${compact?Math.max(52,anchorHeight):anchorHeight}px`);
  if(performance.now()>=manualSelectionUntil) selectTab(resume.getBoundingClientRect().top<innerHeight*.66?'resume':'none');
 }
 window.addEventListener('scroll', () => {
