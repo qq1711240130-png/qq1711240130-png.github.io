@@ -85,20 +85,18 @@
 .folder-layer{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
 .folder-back{z-index:1}
 .folder-inserts{z-index:2;overflow:hidden;clip-path:inset(0 0 19% 0)}
-.folder-paper{transform:translateY(34%) rotate(var(--paper-turn,0deg));transform-origin:50% 64%;transition:transform .72s cubic-bezier(.22,1,.36,1)}
+.folder-paper{transform:translateY(22%) rotate(var(--paper-turn,0deg));transform-origin:50% 64%;transition:transform .72s cubic-bezier(.22,1,.36,1)}
 .folder-front{z-index:3}
-.folder-sticker{position:absolute;height:auto;pointer-events:none;user-select:none;opacity:0;transform:translateY(100%) scale(.4) rotate(-14deg);transition:transform .7s cubic-bezier(.2,.9,.25,1.18),opacity .28s ease}
-.sticker-muscle{left:14.6%;top:14.9%;width:22.4%;--sticker-delay:.08s}
-.sticker-rainbow{left:49.4%;top:29.3%;width:16.2%;--sticker-delay:.14s}
-.sticker-okay{left:24%;top:38%;width:14.2%;--sticker-delay:.2s}
-.sticker-spark{left:73.4%;top:14.9%;width:11.5%;--sticker-delay:.18s}
+.folder-sticker{filter:drop-shadow(0 1px 1px #16162612);position:absolute;height:auto;pointer-events:none;user-select:none;opacity:0;transform:translateY(100%) scale(.4) rotate(-14deg);transition:transform .7s cubic-bezier(.2,.9,.25,1.18),opacity .28s ease}
+.sticker-one{left:22%;top:35.8%;width:19%;--sticker-delay:.12s}
+.sticker-two{left:48%;top:25.5%;width:20%;--sticker-delay:.2s}
 .folder-floor{position:absolute;top:88%;left:28%;width:48%;height:2%;background:#31314617;border-radius:50%;filter:blur(9px);opacity:.35;transform:scaleX(.8);transition:opacity .6s,transform .6s}
-.folder-card:is(:focus-visible,.is-opening) .folder-open{transform:translateY(-2%) scale(1.13)}
+.folder-card:is(:focus-visible,.is-opening) .folder-open{transform:translateY(-2%) scale(1.24)}
 .folder-card:is(:focus-visible,.is-opening) .folder-paper{transform:translateY(0) rotate(var(--paper-turn,0deg))}
 .folder-card:is(:focus-visible,.is-opening) .folder-sticker{opacity:1;transform:translateY(0) scale(1) rotate(0);transition-delay:var(--sticker-delay)}
 .folder-card:is(:focus-visible,.is-opening) .folder-floor{opacity:.17;transform:scaleX(.65)}
 @media(hover:hover){
- .folder-card:hover .folder-open{transform:translateY(-2%) scale(1.13)}
+ .folder-card:hover .folder-open{transform:translateY(-2%) scale(1.24)}
  .folder-card:hover .folder-paper{transform:translateY(0) rotate(var(--paper-turn,0deg))}
  .folder-card:hover .folder-sticker{opacity:1;transform:translateY(0) scale(1) rotate(0);transition-delay:var(--sticker-delay)}
  .folder-card:hover .folder-floor{opacity:.17;transform:scaleX(.65)}

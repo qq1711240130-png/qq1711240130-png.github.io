@@ -25,9 +25,9 @@ const categoryView = document.querySelector('.category-view');
 const categoryTitle = document.querySelector('#category-title');
 const folderCards = [...document.querySelectorAll('.folder-card')];
 const categories = {
- aigc:{name:'AIGC',color:'#92979b'},
+ aigc:{name:'AI作图',color:'#92979b'},
  ecommerce:{name:'电商视觉',color:'#389ee9'},
- brand:{name:'品牌设计',color:'#5546ed'},
+ brand:{name:'品牌视觉',color:'#5546ed'},
  offline:{name:'线下物料',color:'#ec6e78'},
  marketing:{name:'品牌营销',color:'#ff9b2c'}
 };
