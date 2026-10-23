@@ -133,3 +133,6 @@
 }
 @keyframes folder-float-mobile{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.6%)}}
 @media(prefers-reduced-motion:reduce){.folder-float,.content-enter{animation:none}.folder-sticker,.folder-paper,.folder-open{transition:none}}
+
+.portfolio{overflow:hidden;overflow:clip}
+#category-title:focus{outline:none}
