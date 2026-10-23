@@ -201,6 +201,7 @@ function paintNavigation() {
  const dockTop=compact?12:16;
  const docked=anchorTop-scrollY<=dockTop;
  navigation.classList.toggle('is-docked',docked);
+ document.body.dataset.navigationDocked=String(docked);
  const raw=Math.max(0,Math.min(1,(scrollY-Math.max(0,anchorTop-innerHeight*.32))/Math.max(200,innerHeight*.5)));
  const progress=raw*raw*(3-2*raw);
  const contracted=compact?Math.min(360,innerWidth*.78,anchorWidth):Math.min(620,anchorWidth*.76);
