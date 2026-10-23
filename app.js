@@ -42,6 +42,7 @@ let categoryOpenTimer;
 let hasEnteredContent = false;
 let activeModule = null;
 let routeScrollingUntil = 0;
+let lastNavigationScroll = 0;
 const navigation = document.querySelector('.site-navigation');
 const anchor = document.querySelector('.navigation-anchor');
 const section = document.querySelector('.experience-section');
@@ -198,7 +199,9 @@ function selectTab(tab) {
  navigation.querySelector('[data-action="过往作品"]').setAttribute('aria-pressed',String(tab==='portfolio'));
 }
 function paintNavigation() {
- if(activePage==='portfolio' && performance.now()>routeScrollingUntil && scrollY<anchorTop*.42) {
+ const returningUp=scrollY<lastNavigationScroll-1;
+ lastNavigationScroll=scrollY;
+ if(activePage==='portfolio' && (performance.now()>routeScrollingUntil||returningUp) && scrollY<anchorTop*.42) {
   resetPageBounce();bounceSurface=document.querySelector('.resume-inner');
   activePage='resume';resume.hidden=false;portfolio.hidden=true;document.body.dataset.page='resume';
   hasEnteredContent=false;
