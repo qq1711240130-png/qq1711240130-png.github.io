@@ -136,3 +136,5 @@
 
 .portfolio{overflow:hidden;overflow:clip}
 #category-title:focus{outline:none}
+
+@media(min-width:1001px){.folder-grid{transform:translateY(-25%)}}
