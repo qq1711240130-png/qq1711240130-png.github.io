@@ -29,17 +29,19 @@ const moduleLinks = [...document.querySelectorAll('[data-module-link]')];
 const workModules = [...document.querySelectorAll('[data-work-module]')];
 const folderCards = [...document.querySelectorAll('.folder-card')];
 const categories = {
- aigc:{name:'AI作图',color:'#92979b'},
- ecommerce:{name:'电商视觉',color:'#389ee9'},
  brand:{name:'品牌视觉',color:'#5546ed'},
+ ecommerce:{name:'电商视觉',color:'#389ee9'},
+ marketing:{name:'活动营销',color:'#ff9b2c'},
  offline:{name:'线下物料',color:'#ec6e78'},
- marketing:{name:'品牌营销',color:'#ff9b2c'}
+ aigc:{name:'AI作图',color:'#92979b'},
+ motion:{name:'动效制作',color:'#be38ec'}
 };
 let activePage = 'resume';
-let activeCategory = null;
+let activeCategory = 'brand';
 let categoryOpenTimer;
 let hasEnteredContent = false;
 let activeModule = null;
+let routeScrollingUntil = 0;
 const navigation = document.querySelector('.site-navigation');
 const anchor = document.querySelector('.navigation-anchor');
 const section = document.querySelector('.experience-section');
@@ -183,8 +185,7 @@ function measureNavigation() {
  const rect=anchor.getBoundingClientRect();
  anchorTop=rect.top+scrollY; anchorLeft=rect.left; anchorWidth=rect.width; anchorHeight=rect.height;
  navHeight=innerWidth<=760?Math.max(52,anchorHeight):Math.max(44,anchorHeight);
- const stripRect=categoryStrip.getBoundingClientRect();
- stripHeight=stripRect.height || (innerWidth<=760?78:100);
+ stripHeight=innerWidth<=760?96:62;
  navigation.style.setProperty('--nav-font-size',`${innerWidth<=760?28:Math.max(22,Math.min(32,navHeight*.59))}px`);
  document.documentElement.style.setProperty('--primary-nav-height',`${navHeight}px`);
  document.documentElement.style.setProperty('--primary-nav-top',`${innerWidth<=760?12:16}px`);
@@ -197,6 +198,11 @@ function selectTab(tab) {
  navigation.querySelector('[data-action="过往作品"]').setAttribute('aria-pressed',String(tab==='portfolio'));
 }
 function paintNavigation() {
+ if(activePage==='portfolio' && performance.now()>routeScrollingUntil && scrollY<anchorTop*.42) {
+  activePage='resume';resume.hidden=false;portfolio.hidden=true;document.body.dataset.page='resume';
+  hasEnteredContent=false;
+  window.history.replaceState(null,'',window.location.pathname+window.location.search);
+ }
  const compact=innerWidth<=760;
  const dockTop=compact?12:16;
  const docked=anchorTop-scrollY<=dockTop;
@@ -313,81 +319,105 @@ window.addEventListener('resize', resetPageBounce, {passive:true});
 window.addEventListener('pointerdown', resetPageBounce, {passive:true});
 window.addEventListener('pagehide', resetPageBounce, {passive:true});
 
-// Folder links and the compact strip address anchors in the same document.
 function setCategorySelection(slug) {
- const changed=activeCategory!==slug;
  activeCategory=slug;
  categoryLinks.forEach(link=>link.setAttribute('aria-current',String(link.dataset.categoryLink===slug)));
- if(changed && innerWidth<=760) {
-  const link=categoryLinks.find(item=>item.dataset.categoryLink===slug);
-  if(link) {
-   const item=link.getBoundingClientRect(), track=categoryStripList.getBoundingClientRect();
-   if(item.left<track.left+8 || item.right>track.right-8) {
-    categoryStripList.scrollTo({left:categoryStripList.scrollLeft+item.left-track.left-(track.width-item.width)/2,behavior:reduceMotion.matches?'auto':'smooth'});
-   }
-  }
- }
+}
+function paintFolderMorph() {
+ const mobile=innerWidth<=760;
+ const top=(mobile?12:16)+navHeight+6;
+ const available=innerHeight-top;
+ const overviewTop=portfolioOverview.getBoundingClientRect().top;
+ const distance=Math.max(220,available*.72);
+ const raw=Math.max(0,Math.min(1,(top-overviewTop)/distance));
+ const p=reduceMotion.matches?(raw>=.5?1:0):raw*raw*(3-2*raw);
+ const blend=Math.max(0,Math.min(1,(p-.56)/.4));
+ categoryStrip.style.setProperty('--stage-top',`${Math.max(top,overviewTop)}px`);
+ categoryStrip.style.visibility=overviewTop<innerHeight?'visible':'hidden';
+ categoryStrip.style.setProperty('--bar-opacity',String(Math.max(0,(p-.65)/.35)));
+ categoryStrip.style.setProperty('--label-opacity',String(blend));
+ categoryStrip.style.setProperty('--mini-opacity',String(blend));
+ categoryStrip.style.setProperty('--art-opacity',String(1-blend));
+ categoryStrip.classList.toggle('is-compact',p>.98);
+ categoryStrip.dataset.morph=p.toFixed(3);
+ const gridWidth=mobile?Math.min(215,innerWidth*.43):Math.min(350,innerWidth*.23);
+ const gridHeight=gridWidth*900/700;
+ const endWidth=mobile?Math.min(118,(innerWidth-32)/3):Math.min(152,(innerWidth-70)/6);
+ const endHeight=mobile?36:42, gap=mobile?6:10, columns=mobile?3:6;
+ const rowWidth=columns*endWidth+(columns-1)*gap;
+ const lerp=(a,b)=>a+(b-a)*p;
+ categoryLinks.forEach((card,i)=>{
+  const position=Number(card.dataset.gridPosition);
+  const col=mobile?position%2:position%3;
+  const row=mobile?Math.floor(position/2):Math.floor(position/3);
+  const centerX=innerWidth*(mobile?[.27,.73][col]:[.22,.5,.78][col]);
+  const centerY=available*(mobile?[.20,.49,.78][row]:[.26,.70][row]);
+  const x0=centerX-gridWidth*.5,y0=centerY-gridHeight*.66;
+  const x1=(innerWidth-rowWidth)/2+(i%columns)*(endWidth+gap);
+  const y1=8+Math.floor(i/columns)*(endHeight+gap);
+  card.style.setProperty('--card-x',`${lerp(x0,x1)}px`);
+  card.style.setProperty('--card-y',`${lerp(y0,y1)}px`);
+  card.style.setProperty('--card-width',`${lerp(gridWidth,endWidth)}px`);
+  card.style.setProperty('--card-height',`${lerp(gridHeight,endHeight)}px`);
+  card.style.setProperty('--art-width',`${lerp(gridWidth,34)}px`);
+  card.style.setProperty('--art-x',`${lerp(0,7)}px`);
+  card.style.setProperty('--art-y',`${lerp(0,-10)}px`);
+ });
 }
 function updateWorkScrollSpy() {
  if(activePage!=='portfolio' || portfolio.hidden) return;
- const line=(innerWidth<=760?12:16)+navHeight+6+stripHeight+24;
- let current=workSections[0];
- for(const item of workSections) if(item.getBoundingClientRect().top<=line+12) current=item;
- if(current) setCategorySelection(current.dataset.workCategory);
- if(!current || current.dataset.workCategory!=='ecommerce') return;
- const moduleLine=line+(innerWidth<=760?72:0);
- let module=workModules[0];
- for(const item of workModules) if(item.getBoundingClientRect().top<=moduleLine+12) module=item;
- if(module && activeModule!==module.dataset.workModule) {
-  activeModule=module.dataset.workModule;
+ paintFolderMorph();
+ if(activeCategory!=='ecommerce') return;
+ const line=(innerWidth<=760?12:16)+navHeight+6+stripHeight+24+(innerWidth<=760?72:0);
+ let current=workModules[0];
+ for(const item of workModules)if(item.getBoundingClientRect().top<=line+12)current=item;
+ if(current && activeModule!==current.dataset.workModule){
+  activeModule=current.dataset.workModule;
   moduleLinks.forEach(link=>link.setAttribute('aria-current',String(link.dataset.moduleLink===activeModule)));
  }
 }
 function contentTarget(hash) {
  const parts=hash.replace(/^#/,'').split('/');
- if(parts[0]!=='portfolio') return {page:'resume',target:resume};
- const slug=Object.hasOwn(categories,parts[1])?parts[1]:null;
- const work=slug?workSections.find(item=>item.dataset.workCategory===slug):portfolio;
+ if(parts[0]!=='portfolio')return {page:'resume',target:resume};
+ const slug=Object.hasOwn(categories,parts[1])?parts[1]:activeCategory||'brand';
+ const category=workSections.find(item=>item.dataset.workCategory===slug);
  const module=slug==='ecommerce'?workModules.find(item=>item.dataset.workModule===parts[2]):null;
- return {page:'portfolio',target:module||work,category:slug};
+ return {page:'portfolio',category:slug,target:parts[1]?(module||category):portfolio};
 }
-function applyContentRoute(hash, {scroll=false,focus=false}={}) {
- clearTimeout(categoryOpenTimer);
- folderCards.forEach(card=>card.classList.remove('is-opening'));
- const route=contentTarget(hash);
- const changed=activePage!==route.page;
- resetPageBounce();
- activePage=route.page;
- resume.hidden=activePage!=='resume';
- portfolio.hidden=activePage!=='portfolio';
+function applyContentRoute(hash,{scroll=false,focus=false}={}){
+ clearTimeout(categoryOpenTimer);folderCards.forEach(card=>card.classList.remove('is-opening'));
+ const route=contentTarget(hash),changed=activePage!==route.page||activeCategory!==route.category;
+ resetPageBounce();routeScrollingUntil=performance.now()+1600;
+ activePage=route.page;resume.hidden=activePage!=='resume';portfolio.hidden=activePage!=='portfolio';
+ if(route.category)setCategorySelection(route.category);
+ workSections.forEach(item=>item.hidden=item.dataset.workCategory!==activeCategory);
  document.body.dataset.page=activePage;
- bounceSurface=activePage==='portfolio'?portfolioInner:document.querySelector('.resume-inner');
+ bounceSurface=activePage==='portfolio'?workSections.find(item=>item.dataset.workCategory===activeCategory):document.querySelector('.resume-inner');
  hasEnteredContent=true;
- if(route.category) setCategorySelection(route.category);
- if(changed&&!reduceMotion.matches) bounceSurface.animate([{opacity:.35},{opacity:1}],{duration:400,easing:'ease-out'});
+ if(changed&&!reduceMotion.matches)bounceSurface.animate([{opacity:.35},{opacity:1}],{duration:400,easing:'ease-out'});
  measureNavigation();
- if(scroll) route.target.scrollIntoView({behavior:reduceMotion.matches?'auto':'smooth',block:'start'});
- if(focus) route.target.focus({preventScroll:true});
+ if(scroll)route.target.scrollIntoView({behavior:reduceMotion.matches?'auto':'smooth',block:'start'});
+ if(focus)route.target.focus({preventScroll:true});
  selectTab(activePage);
 }
-function navigateContent(hash,options={}) {
- if(window.location.hash!==hash) window.history.pushState(null,'',hash);
+function navigateContent(hash,options={}){
+ if(window.location.hash!==hash)window.history.pushState(null,'',hash);
  applyContentRoute(hash,{scroll:true,...options});
 }
 folderCards.forEach(card=>card.addEventListener('click',event=>{
- if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey) return;
- event.preventDefault();
- clearTimeout(categoryOpenTimer);
- folderCards.forEach(other=>other.classList.remove('is-opening'));
+ if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+ event.preventDefault();clearTimeout(categoryOpenTimer);
  card.classList.add('is-opening');
- const delay=reduceMotion.matches||event.detail===0?0:matchMedia('(hover: none)').matches?380:120;
+ const delay=reduceMotion.matches||categoryStrip.classList.contains('is-compact')?0:160;
  categoryOpenTimer=setTimeout(()=>navigateContent(card.getAttribute('href'),{focus:true}),delay);
 }));
-[...categoryLinks,...moduleLinks].forEach(link=>link.addEventListener('click',event=>{
- if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey) return;
- event.preventDefault();
- navigateContent(link.getAttribute('href'),{focus:true});
+[...moduleLinks,...document.querySelectorAll('[data-next-category]')].forEach(link=>link.addEventListener('click',event=>{
+ if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+ event.preventDefault();navigateContent(link.getAttribute('href'),{focus:true});
 }));
 window.addEventListener('popstate',()=>applyContentRoute(window.location.hash,{scroll:true}));
 window.addEventListener('hashchange',()=>applyContentRoute(window.location.hash,{scroll:true}));
-if(/^#(?:resume|portfolio)(?:\/|$)/.test(window.location.hash)) applyContentRoute(window.location.hash,{scroll:true});
+// A fresh visit always opens the cover. Its next screen defaults to the resume.
+window.history.scrollRestoration='manual';
+window.scrollTo({top:0,behavior:'instant'});
+window.addEventListener('load',()=>{if(!hasEnteredContent)window.scrollTo({top:0,behavior:'instant'});},{once:true});
