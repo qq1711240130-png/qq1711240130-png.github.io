@@ -21,8 +21,12 @@ const resume = document.querySelector('#resume');
 const portfolio = document.querySelector('#portfolio');
 const portfolioInner = document.querySelector('.portfolio-inner');
 const portfolioOverview = document.querySelector('.portfolio-overview');
-const categoryView = document.querySelector('.category-view');
-const categoryTitle = document.querySelector('#category-title');
+const categoryStrip = document.querySelector('.category-strip');
+const categoryStripList = document.querySelector('.category-strip-list');
+const categoryLinks = [...document.querySelectorAll('[data-category-link]')];
+const workSections = [...document.querySelectorAll('[data-work-category]')];
+const moduleLinks = [...document.querySelectorAll('[data-module-link]')];
+const workModules = [...document.querySelectorAll('[data-work-module]')];
 const folderCards = [...document.querySelectorAll('.folder-card')];
 const categories = {
  aigc:{name:'AI作图',color:'#92979b'},
@@ -34,6 +38,8 @@ const categories = {
 let activePage = 'resume';
 let activeCategory = null;
 let categoryOpenTimer;
+let hasEnteredContent = false;
+let activeModule = null;
 const navigation = document.querySelector('.site-navigation');
 const anchor = document.querySelector('.navigation-anchor');
 const section = document.querySelector('.experience-section');
@@ -171,10 +177,18 @@ touchSurface.addEventListener('touchcancel', () => { touch=null; }, {passive:tru
 
 // Keep the same bar attached to its hero position, then pin it at the top.
 let anchorTop=0, anchorLeft=0, anchorWidth=0, anchorHeight=0;
-let navigationFrame=0, manualSelectionUntil=0;
+let navigationFrame=0;
+let navHeight=54, stripHeight=100;
 function measureNavigation() {
  const rect=anchor.getBoundingClientRect();
  anchorTop=rect.top+scrollY; anchorLeft=rect.left; anchorWidth=rect.width; anchorHeight=rect.height;
+ navHeight=innerWidth<=760?Math.max(52,anchorHeight):Math.max(44,anchorHeight);
+ const stripRect=categoryStrip.getBoundingClientRect();
+ stripHeight=stripRect.height || (innerWidth<=760?78:100);
+ navigation.style.setProperty('--nav-font-size',`${innerWidth<=760?28:Math.max(22,Math.min(32,navHeight*.59))}px`);
+ document.documentElement.style.setProperty('--primary-nav-height',`${navHeight}px`);
+ document.documentElement.style.setProperty('--primary-nav-top',`${innerWidth<=760?12:16}px`);
+ document.documentElement.style.setProperty('--category-strip-height',`${stripHeight}px`);
  paintNavigation();
 }
 function selectTab(tab) {
@@ -187,14 +201,18 @@ function paintNavigation() {
  const dockTop=compact?12:16;
  const docked=anchorTop-scrollY<=dockTop;
  navigation.classList.toggle('is-docked',docked);
- const smallDock=innerWidth<=760 && docked;
- const width=smallDock?Math.min(innerWidth*.86,520):anchorWidth;
+ const raw=Math.max(0,Math.min(1,(scrollY-Math.max(0,anchorTop-innerHeight*.32))/Math.max(200,innerHeight*.5)));
+ const progress=raw*raw*(3-2*raw);
+ const contracted=compact?Math.min(360,innerWidth*.78,anchorWidth):Math.min(620,anchorWidth*.76);
+ const width=anchorWidth+(contracted-anchorWidth)*progress;
  navigation.style.setProperty('--nav-top',`${Math.max(dockTop,anchorTop-scrollY)}px`);
- navigation.style.setProperty('--nav-left',`${smallDock?(innerWidth-width)/2:anchorLeft}px`);
+ navigation.style.setProperty('--nav-left',`${anchorLeft+(anchorWidth-width)/2}px`);
  navigation.style.setProperty('--nav-width',`${width}px`);
- navigation.style.setProperty('--nav-height',`${compact?Math.max(52,anchorHeight):anchorHeight}px`);
+ navigation.style.setProperty('--nav-height',`${navHeight}px`);
  const surface=activePage==='portfolio'?portfolio:resume;
- if(performance.now()>=manualSelectionUntil) selectTab(surface.getBoundingClientRect().top<innerHeight*.66?activePage:'none');
+ if(surface.getBoundingClientRect().top<innerHeight*.66) hasEnteredContent=true;
+ selectTab(hasEnteredContent?activePage:'none');
+ updateWorkScrollSpy();
 }
 window.addEventListener('scroll', () => {
  if(navigationFrame) return;
@@ -202,6 +220,7 @@ window.addEventListener('scroll', () => {
 }, {passive:true});
 window.addEventListener('resize',measureNavigation,{passive:true});
 new ResizeObserver(measureNavigation).observe(anchor);
+new ResizeObserver(measureNavigation).observe(categoryStrip);
 navigation.querySelector('[data-action="简历"]').addEventListener('click', () => {
  navigateContent('#resume');
 });
@@ -293,35 +312,62 @@ window.addEventListener('resize', resetPageBounce, {passive:true});
 window.addEventListener('pointerdown', resetPageBounce, {passive:true});
 window.addEventListener('pagehide', resetPageBounce, {passive:true});
 
-// Only the content below the existing cover changes. Hash routes can be shared,
-// opened in a new tab, and traversed with the browser's Back/Forward buttons.
+// Folder links and the compact strip address anchors in the same document.
+function setCategorySelection(slug) {
+ const changed=activeCategory!==slug;
+ activeCategory=slug;
+ categoryLinks.forEach(link=>link.setAttribute('aria-current',String(link.dataset.categoryLink===slug)));
+ if(changed && innerWidth<=760) {
+  const link=categoryLinks.find(item=>item.dataset.categoryLink===slug);
+  if(link) {
+   const item=link.getBoundingClientRect(), track=categoryStripList.getBoundingClientRect();
+   if(item.left<track.left+8 || item.right>track.right-8) {
+    categoryStripList.scrollTo({left:categoryStripList.scrollLeft+item.left-track.left-(track.width-item.width)/2,behavior:reduceMotion.matches?'auto':'smooth'});
+   }
+  }
+ }
+}
+function updateWorkScrollSpy() {
+ if(activePage!=='portfolio' || portfolio.hidden) return;
+ const line=(innerWidth<=760?12:16)+navHeight+6+stripHeight+24;
+ let current=workSections[0];
+ for(const item of workSections) if(item.getBoundingClientRect().top<=line+12) current=item;
+ if(current) setCategorySelection(current.dataset.workCategory);
+ if(!current || current.dataset.workCategory!=='ecommerce') return;
+ const moduleLine=line+(innerWidth<=760?72:0);
+ let module=workModules[0];
+ for(const item of workModules) if(item.getBoundingClientRect().top<=moduleLine+12) module=item;
+ if(module && activeModule!==module.dataset.workModule) {
+  activeModule=module.dataset.workModule;
+  moduleLinks.forEach(link=>link.setAttribute('aria-current',String(link.dataset.moduleLink===activeModule)));
+ }
+}
+function contentTarget(hash) {
+ const parts=hash.replace(/^#/,'').split('/');
+ if(parts[0]!=='portfolio') return {page:'resume',target:resume};
+ const slug=Object.hasOwn(categories,parts[1])?parts[1]:null;
+ const work=slug?workSections.find(item=>item.dataset.workCategory===slug):portfolio;
+ const module=slug==='ecommerce'?workModules.find(item=>item.dataset.workModule===parts[2]):null;
+ return {page:'portfolio',target:module||work,category:slug};
+}
 function applyContentRoute(hash, {scroll=false,focus=false}={}) {
  clearTimeout(categoryOpenTimer);
  folderCards.forEach(card=>card.classList.remove('is-opening'));
- const requested=hash.startsWith('#portfolio/')?hash.slice('#portfolio/'.length):null;
- const category=requested && Object.hasOwn(categories,requested)?categories[requested]:null;
- const nextPage=hash==='#portfolio'||hash.startsWith('#portfolio/')?'portfolio':'resume';
- const changed=activePage!==nextPage||activeCategory!==(category?requested:null);
+ const route=contentTarget(hash);
+ const changed=activePage!==route.page;
  resetPageBounce();
- activePage=nextPage;
- activeCategory=category?requested:null;
- resume.hidden=nextPage!=='resume';
- portfolio.hidden=nextPage!=='portfolio';
- portfolioOverview.hidden=Boolean(category);
- categoryView.hidden=!category;
- categoryTitle.textContent=category?category.name:'';
- portfolio.setAttribute('aria-labelledby',category?'category-title':'portfolio-title');
- portfolioInner.style.setProperty('--category-color',category?category.color:'#5776ff');
- document.body.dataset.page=nextPage;
- bounceSurface=nextPage==='portfolio'?portfolioInner:document.querySelector('.resume-inner');
- const surface=nextPage==='portfolio'?portfolio:resume;
- const inner=nextPage==='portfolio'?portfolioInner:bounceSurface;
- if(changed&&!reduceMotion.matches) inner.animate([{opacity:.25,transform:'translateY(12px)'},{opacity:1,transform:'translateY(0)'}],{duration:600,easing:'cubic-bezier(.22,1,.36,1)'});
- manualSelectionUntil=performance.now()+1300;
- selectTab(nextPage);
- if(scroll) surface.scrollIntoView({behavior:reduceMotion.matches?'auto':'smooth',block:'start'});
- if(focus&&category) categoryTitle.focus({preventScroll:true});
- paintNavigation();
+ activePage=route.page;
+ resume.hidden=activePage!=='resume';
+ portfolio.hidden=activePage!=='portfolio';
+ document.body.dataset.page=activePage;
+ bounceSurface=activePage==='portfolio'?portfolioInner:document.querySelector('.resume-inner');
+ hasEnteredContent=true;
+ if(route.category) setCategorySelection(route.category);
+ if(changed&&!reduceMotion.matches) bounceSurface.animate([{opacity:.35},{opacity:1}],{duration:400,easing:'ease-out'});
+ measureNavigation();
+ if(scroll) route.target.scrollIntoView({behavior:reduceMotion.matches?'auto':'smooth',block:'start'});
+ if(focus) route.target.focus({preventScroll:true});
+ selectTab(activePage);
 }
 function navigateContent(hash,options={}) {
  if(window.location.hash!==hash) window.history.pushState(null,'',hash);
@@ -336,14 +382,11 @@ folderCards.forEach(card=>card.addEventListener('click',event=>{
  const delay=reduceMotion.matches||event.detail===0?0:matchMedia('(hover: none)').matches?380:120;
  categoryOpenTimer=setTimeout(()=>navigateContent(card.getAttribute('href'),{focus:true}),delay);
 }));
-document.querySelector('[data-portfolio-back]').addEventListener('click',event=>{
+[...categoryLinks,...moduleLinks].forEach(link=>link.addEventListener('click',event=>{
  if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey) return;
  event.preventDefault();
- const previous=activeCategory;
- navigateContent('#portfolio');
- const card=folderCards.find(item=>item.dataset.category===previous);
- if(card) card.focus({preventScroll:true});
-});
+ navigateContent(link.getAttribute('href'),{focus:true});
+}));
 window.addEventListener('popstate',()=>applyContentRoute(window.location.hash,{scroll:true}));
 window.addEventListener('hashchange',()=>applyContentRoute(window.location.hash,{scroll:true}));
 if(/^#(?:resume|portfolio)(?:\/|$)/.test(window.location.hash)) applyContentRoute(window.location.hash,{scroll:true});
