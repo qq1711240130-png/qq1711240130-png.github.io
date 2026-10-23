@@ -279,3 +279,8 @@ body[data-navigation-docked=true]:before{opacity:1}
 .folder-stage.is-morphing .folder-sticker{opacity:0!important;transform:translateY(30%) scale(.8)!important;transition:opacity .15s,transform .25s;transition-delay:0s!important}
 @media(prefers-reduced-motion:reduce){.folder-stage .folder-float{animation:none}}
 
+
+/* Original source lettering: inherit selected color while keeping its size on scroll. */
+.site-navigation .nav-font-art{display:block;height:var(--nav-font-size,30px);background-color:currentColor;line-height:0;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;mask-mode:alpha}
+.site-navigation .nav-font-resume{width:calc(var(--nav-font-size,30px) * 107 / 51);-webkit-mask-image:url("assets/resume-v2/nav-resume-dark.png");mask-image:url("assets/resume-v2/nav-resume-dark.png")}
+.site-navigation .nav-font-portfolio{width:calc(var(--nav-font-size,30px) * 221 / 51);-webkit-mask-image:url("assets/resume-v2/nav-portfolio-dark.png");mask-image:url("assets/resume-v2/nav-portfolio-dark.png")}
