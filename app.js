@@ -199,6 +199,7 @@ function selectTab(tab) {
 }
 function paintNavigation() {
  if(activePage==='portfolio' && performance.now()>routeScrollingUntil && scrollY<anchorTop*.42) {
+  resetPageBounce();bounceSurface=document.querySelector('.resume-inner');
   activePage='resume';resume.hidden=false;portfolio.hidden=true;document.body.dataset.page='resume';
   hasEnteredContent=false;
   window.history.replaceState(null,'',window.location.pathname+window.location.search);
@@ -325,6 +326,7 @@ function setCategorySelection(slug) {
 }
 function paintFolderMorph() {
  const mobile=innerWidth<=760;
+ const viewWidth=document.documentElement.clientWidth||innerWidth;
  const top=(mobile?12:16)+navHeight+6;
  const available=innerHeight-top;
  const overviewTop=portfolioOverview.getBoundingClientRect().top;
@@ -340,9 +342,9 @@ function paintFolderMorph() {
  categoryStrip.style.setProperty('--art-opacity',String(1-blend));
  categoryStrip.classList.toggle('is-compact',p>.98);
  categoryStrip.dataset.morph=p.toFixed(3);
- const gridWidth=mobile?Math.min(215,innerWidth*.43):Math.min(350,innerWidth*.23);
+ const gridWidth=mobile?Math.min(215,viewWidth*.43):Math.min(350,viewWidth*.23);
  const gridHeight=gridWidth*900/700;
- const endWidth=mobile?Math.min(118,(innerWidth-32)/3):Math.min(152,(innerWidth-70)/6);
+ const endWidth=mobile?Math.min(118,(viewWidth-32)/3):Math.min(152,(viewWidth-70)/6);
  const endHeight=mobile?36:42, gap=mobile?6:10, columns=mobile?3:6;
  const rowWidth=columns*endWidth+(columns-1)*gap;
  const lerp=(a,b)=>a+(b-a)*p;
@@ -350,10 +352,10 @@ function paintFolderMorph() {
   const position=Number(card.dataset.gridPosition);
   const col=mobile?position%2:position%3;
   const row=mobile?Math.floor(position/2):Math.floor(position/3);
-  const centerX=innerWidth*(mobile?[.27,.73][col]:[.22,.5,.78][col]);
+  const centerX=viewWidth*(mobile?[.27,.73][col]:[.22,.5,.78][col]);
   const centerY=available*(mobile?[.20,.49,.78][row]:[.26,.70][row]);
   const x0=centerX-gridWidth*.5,y0=centerY-gridHeight*.66;
-  const x1=(innerWidth-rowWidth)/2+(i%columns)*(endWidth+gap);
+  const x1=(viewWidth-rowWidth)/2+(i%columns)*(endWidth+gap);
   const y1=8+Math.floor(i/columns)*(endHeight+gap);
   card.style.setProperty('--card-x',`${lerp(x0,x1)}px`);
   card.style.setProperty('--card-y',`${lerp(y0,y1)}px`);
