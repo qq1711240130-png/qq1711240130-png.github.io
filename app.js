@@ -405,7 +405,8 @@ function advanceFolderMorph(now) {
 }
 function paintFolderMorph() {
  const top=(innerWidth<=760?12:16)+navHeight+6;
- const distance=Math.max(240,(innerHeight-top)*.84);
+ const available=innerHeight-top;
+ const distance=Math.max(120,Math.min(available*.84,available-stripHeight-40));
  const raw=clampUnit((top-portfolioOverview.getBoundingClientRect().top)/distance);
  folderTarget=reduceMotion.matches?(raw>=.5?1:0):raw;
  if(folderProgress===null||reduceMotion.matches){
