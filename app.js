@@ -29,7 +29,7 @@ const moduleLinks = [...document.querySelectorAll('[data-module-link]')];
 const workModules = [...document.querySelectorAll('[data-work-module]')];
 const folderCards = [...document.querySelectorAll('.folder-card')];
 const categories = {
- brand:{name:'品牌视觉',color:'#5546ed'},
+ brand:{name:'社媒传播',color:'#5546ed'},
  ecommerce:{name:'电商视觉',color:'#389ee9'},
  marketing:{name:'活动营销',color:'#ff9b2c'},
  offline:{name:'线下物料',color:'#ec6e78'},
@@ -416,16 +416,19 @@ function paintFolderMorph() {
  if(folderProgress!==folderTarget&&!folderFrame)folderFrame=requestAnimationFrame(advanceFolderMorph);
 }
 
+function moduleCategory(item){return item.dataset.moduleCategory||'ecommerce';}
 function updateWorkScrollSpy() {
  if(activePage!=='portfolio' || portfolio.hidden) return;
  paintFolderMorph();
- if(activeCategory!=='ecommerce') return;
+ const visibleModules=workModules.filter(item=>moduleCategory(item)===activeCategory);
+ if(!visibleModules.length)return;
  const line=(innerWidth<=760?12:16)+navHeight+6+stripHeight+24+(innerWidth<=760?72:0);
- let current=workModules[0];
- for(const item of workModules)if(item.getBoundingClientRect().top<=line+12)current=item;
- if(current && activeModule!==current.dataset.workModule){
-  activeModule=current.dataset.workModule;
-  moduleLinks.forEach(link=>link.setAttribute('aria-current',String(link.dataset.moduleLink===activeModule)));
+ let current=visibleModules[0];
+ for(const item of visibleModules)if(item.getBoundingClientRect().top<=line+12)current=item;
+ const key=activeCategory+'/'+current.dataset.workModule;
+ if(activeModule!==key){
+  activeModule=key;
+  moduleLinks.forEach(link=>link.setAttribute('aria-current',String(moduleCategory(link)===activeCategory&&link.dataset.moduleLink===current.dataset.workModule)));
  }
 }
 function contentTarget(hash) {
@@ -433,7 +436,7 @@ function contentTarget(hash) {
  if(parts[0]!=='portfolio')return {page:'resume',target:resume};
  const slug=Object.hasOwn(categories,parts[1])?parts[1]:activeCategory||'brand';
  const category=workSections.find(item=>item.dataset.workCategory===slug);
- const module=slug==='ecommerce'?workModules.find(item=>item.dataset.workModule===parts[2]):null;
+ const module=workModules.find(item=>moduleCategory(item)===slug&&item.dataset.workModule===parts[2]);
  return {page:'portfolio',category:slug,target:parts[1]?(module||category):portfolio};
 }
 function applyContentRoute(hash,{scroll=false,focus=false}={}){
