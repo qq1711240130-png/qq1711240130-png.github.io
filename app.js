@@ -244,6 +244,37 @@ navigation.querySelector('[data-action="过往作品"]').addEventListener('click
 });
 measureNavigation();
 
+// Portfolio reveal: observe individual artwork blocks, keeping layout and lazy loading intact.
+const workRevealTargets=Array.from(document.querySelectorAll('[data-work-reveal]')||[]);
+let workRevealObserver=null;
+function showWorkReveal(element){element.classList.add('is-work-visible');}
+function prepareWorkReveals(slug){
+ if(!workRevealObserver || reduceMotion.matches)return;
+ workRevealTargets.filter(element=>element.dataset.workReveal===slug).forEach(element=>{
+  workRevealObserver.unobserve(element);
+  element.classList.remove('is-work-visible');
+  workRevealObserver.observe(element);
+ });
+}
+if('IntersectionObserver' in window && !reduceMotion.matches){
+ workRevealObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
+  if(!entry.isIntersecting || activePage!=='portfolio' || entry.target.dataset.workReveal!==activeCategory)return;
+  showWorkReveal(entry.target);workRevealObserver.unobserve(entry.target);
+ }),{threshold:.06,rootMargin:'0px 0px -28px 0px'});
+ document.documentElement.classList.add('work-motion');
+ workRevealTargets.forEach(element=>{
+  element.style.setProperty('--work-reveal-delay',`${Number(element.dataset.workDelay||0)}ms`);
+  workRevealObserver.observe(element);
+ });
+}else workRevealTargets.forEach(showWorkReveal);
+reduceMotion.addEventListener?.('change',event=>{
+ if(!event.matches)return;
+ workRevealObserver?.disconnect();workRevealObserver=null;
+ document.documentElement.classList.remove('work-motion');
+ workRevealTargets.forEach(showWorkReveal);
+});
+// End portfolio reveal.
+
 const reveals=[...document.querySelectorAll('.reveal')];
 if('IntersectionObserver' in window && !reduceMotion.matches) {
  const observer=new IntersectionObserver(entries => entries.forEach(entry => {
@@ -446,6 +477,7 @@ function applyContentRoute(hash,{scroll=false,focus=false}={}){
  activePage=route.page;resume.hidden=activePage!=='resume';portfolio.hidden=activePage!=='portfolio';
  if(route.category)setCategorySelection(route.category);
  workSections.forEach(item=>item.hidden=item.dataset.workCategory!==activeCategory);
+ if(changed && activePage==='portfolio')prepareWorkReveals(activeCategory);
  document.body.dataset.page=activePage;
  bounceSurface=activePage==='portfolio'?workSections.find(item=>item.dataset.workCategory===activeCategory):document.querySelector('.resume-inner');
  hasEnteredContent=true;
